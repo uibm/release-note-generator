@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBM Terraform Provider Release Notes Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #24292f;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .results {
+            display: none;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .output-section {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .output-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .output-header h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .output-content {
+            padding: 0;
+        }
+
+        .output-content pre {
+            margin: 0;
+            padding: 30px;
+            background: #f8fafc;
+            border: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .info {
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            color: #1d4ed8;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .stats {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+
+        .commit-category {
+            margin: 10px 0;
+            padding: 8px 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #475569;
+        }
+
+        .new-feature {
+            background: #ecfdf5;
+            border-left: 4px solid #22c55e;
+            padding: 10px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 IBM Terraform Provider</h1>
+            <p>Release Notes & Changelog Generator</p>
+        </div>
+
+        <div class="controls">
+            <div class="grid">
+                <div class="form-group">
+                    <label for="lastTag">Last Released Tag:</label>
+                    <input type="text" id="lastTag" placeholder="v1.78.3" value="v1.78.3">
+                </div>
+                <div class="form-group">
+                    <label for="targetBranch">Target Branch:</label>
+                    <select id="targetBranch">
+                        <option value="master">master</option>
+                        <option value="main">main</option>
+                        <option value="develop">develop</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="newVersion">New Version (for release notes):</label>
+                <input type="text" id="newVersion" placeholder="1.78.4">
+            </div>
+            
+            <div class="info" id="httpsInfo" style="display: none;">
+                📋 <strong>Copy Feature:</strong> One-click copying works best on HTTPS sites. If copy fails, a manual copy dialog will appear.
+            </div>
+            
+            <button class="btn" onclick="generateReleaseNotes()">Generate Release Notes</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Fetching commits and generating release notes...</p>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;">
+            <h3 style="margin-bottom: 15px; color: #374151;">Release Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalCommits">0</div>
+                    <div class="stat-label">Total Changes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="bugFixes">0</div>
+                    <div class="stat-label">Bug Fixes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="newFeatures">0</div>
+                    <div class="stat-label">New Features</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="enhancements">0</div>
+                    <div class="stat-label">Enhancements</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="servicesImpacted">0</div>
+                    <div class="stat-label">Services Impacted</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="output-section">
+                <div class="output-header">
+                    <h3>📝 CHANGELOG.md</h3>
+                    <button class="copy-btn" onclick="copyToClipboard('changelog')">Copy</button>
+                </div>
+                <div class="output-content">
+                    <pre id="changelog"></pre>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="output-header">
+                    <h3>📋 Release Notes</h3>
+                    <button class="copy-btn" onclick="copyToClipboard('releasenotes')">Copy</button>
+                </div>
+                <div class="output-content">
+                    <pre id="releasenotes"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_API_BASE = 'https://api.github.com';
+        const REPO_OWNER = 'IBM-Cloud';
+        const REPO_NAME = 'terraform-provider-ibm';
+
+        // Enhanced service mapping specific to IBM Terraform Provider
+        const SERVICE_MAPPING = {
+            // VPC Infrastructure - most common
+            'vpc': ['VPC Infrastructure', 'vpc/', 'is_', 'ibm_is_', 'bare_metal', 'virtual_network', 'load_balancer', 'security_group'],
+            
+            // Power Systems 
+            'power': ['Power Systems', 'power/', 'pi_', 'ibm_pi_', 'placement_group'],
+            
+            // IAM - now includes action control
+            'iam': ['IAM', 'iam/', 'ibm_iam_', 'action_control', 'policy_assignment', 'policy_template'],
+            
+            // Secrets Manager - enhanced with custom credentials
+            'secrets': ['Secrets Manager', 'secretsmanager/', 'sm_', 'ibm_sm_', 'custom_credentials'],
+            
+            // Configuration Aggregator
+            'config': ['Configuration Aggregator', 'configurationaggregator/', 'config_aggregator', 'ibm_config_'],
+            
+            // Event Streams
+            'event': ['Event Streams', 'eventstreams/', 'event_streams', 'ibm_event_'],
+            
+            // CD Tekton Pipeline
+            'cdtekton': ['CD Tekton Pipeline', 'cdtektonpipeline/', 'cd_tekton', 'tekton_pipeline'],
+            
+            // Partner Center Sell
+            'partner': ['Partner Center Sell', 'partnercentersell/', 'onboarding_catalog', 'ibm_onboarding_'],
+            
+            // Cloud Internet Services
+            'cis': ['Cloud Internet Services', 'cis/', 'ibm_cis_', 'ruleset'],
+            
+            // Cloud Object Storage
+            'cos': ['Cloud Object Storage', 'cos/', 'ibm_cos_'],
+            
+            // Classic Infrastructure
+            'classic': ['Classic Infrastructure', 'classicinfrastructure/', 'lb_vpx'],
+            
+            // HPCS
+            'hpcs': ['HPCS', 'hpcs/', 'ibm_hpcs_'],
+            
+            // App Configuration
+            'appconfig': ['App Configuration', 'appconfiguration/', 'app_config', 'ibm_app_config_'],
+            
+            // Backup/Recovery
+            'backup': ['Backup/Recovery', 'backup/', 'is_backup_policy'],
+            
+            // Transit Gateway
+            'transit': ['Transit Gateway', 'tgw/', 'is_transit_gateway', 'transit_gateway'],
+            
+            // General/Provider level
+            'provider': ['General', 'provider/', 'conns/', 'go.mod', 'go.sum']
+        };
+
+        // Enhanced commit type detection for IBM Terraform Provider
+        const COMMIT_PATTERNS = {
+            // New Features (major additions)
+            newFeatures: [
+                /add.*support.*for.*custom.*credentials/i,
+                /add.*action.*control.*template/i,
+                /add.*new.*resource.*ibm_/i,
+                /add.*new.*data.*source.*ibm_/i,
+                /feat.*new.*resource/i,
+                /feat.*new.*data.*source/i,
+                /resource.*ibm_.*custom_credentials/i,
+                /resource.*ibm_.*action_control/i
+            ],
+            
+            // Bug Fixes
+            bugFixes: [
+                /fix/i,
+                /bug/i,
+                /error/i,
+                /correct/i,
+                /resolve/i,
+                /patch/i,
+                /validation/i,
+                /regression/i
+            ],
+            
+            // Enhancements
+            enhancements: [
+                /enhance/i,
+                /improve/i,
+                /update/i,
+                /upgrade/i,
+                /add.*support/i,
+                /extend/i,
+                /feat/i,
+                /support.*for/i
+            ],
+            
+            // Documentation
+            documentation: [
+                /docs/i,
+                /documentation/i,
+                /readme/i,
+                /_test\.go/,
+                /example/i,
+                /website\/docs/
+            ],
+            
+            // Build/CI
+            build: [
+                /build/i,
+                /ci/i,
+                /workflow/i,
+                /go\.mod/,
+                /go\.sum/,
+                /dependency/i,
+                /upgrade.*go/i
+            ]
+        };
+
+        function detectService(commit) {
+            const message = commit.commit.message.toLowerCase();
+            const files = commit.files || [];
+            
+            // Check file paths first for better accuracy
+            for (const file of files) {
+                const filePath = file.filename.toLowerCase();
+                for (const [key, [serviceName, ...patterns]] of Object.entries(SERVICE_MAPPING)) {
+                    for (const pattern of patterns) {
+                        if (filePath.includes(pattern.toLowerCase())) {
+                            return serviceName;
+                        }
+                    }
+                }
+            }
+            
+            // Check commit message
+            for (const [key, [serviceName, ...patterns]] of Object.entries(SERVICE_MAPPING)) {
+                for (const pattern of patterns) {
+                    if (message.includes(pattern.toLowerCase())) {
+                        return serviceName;
+                    }
+                }
+            }
+            
+            return 'General';
+        }
+
+        function detectCommitType(commit) {
+            const message = commit.commit.message;
+            const files = commit.files || [];
+            
+            // Check for new features first (most specific)
+            for (const pattern of COMMIT_PATTERNS.newFeatures) {
+                if (pattern.test(message)) {
+                    return 'New Features';
+                }
+            }
+            
+            // Check for documentation changes
+            if (files.some(f => f.filename.includes('website/docs/') || f.filename.includes('_test.go'))) {
+                return 'Documentation';
+            }
+            
+            // Check for build/dependency changes
+            if (files.some(f => f.filename === 'go.mod' || f.filename === 'go.sum')) {
+                return 'Build System';
+            }
+            
+            for (const pattern of COMMIT_PATTERNS.build) {
+                if (pattern.test(message)) {
+                    return 'Build System';
+                }
+            }
+            
+            // Check for bug fixes
+            for (const pattern of COMMIT_PATTERNS.bugFixes) {
+                if (pattern.test(message)) {
+                    return 'Bug Fixes';
+                }
+            }
+            
+            // Check for documentation
+            for (const pattern of COMMIT_PATTERNS.documentation) {
+                if (pattern.test(message)) {
+                    return 'Documentation';
+                }
+            }
+            
+            // Default to enhancements
+            return 'Enhancements';
+        }
+
+        function extractPRNumber(message) {
+            const prMatch = message.match(/\(#(\d+)\)|\#(\d+)/);
+            return prMatch ? (prMatch[1] || prMatch[2]) : null;
+        }
+
+        function cleanCommitMessage(message) {
+            return message
+                .split('\n')[0] // Take only first line
+                .replace(/^\w+(\(.+\))?:\s*/, '') // Remove conventional commit prefix
+                .replace(/\(#\d+\)$/, '') // Remove PR number at end
+                .replace(/^(feat|fix|docs|style|refactor|test|chore|build|ci)(\(.+\))?:\s*/i, '')
+                .trim();
+        }
+
+        function isNewFeature(commit) {
+            const message = commit.commit.message;
+            const files = commit.files || [];
+            
+            // Check for new resource/data source files
+            const hasNewResource = files.some(f => 
+                f.status === 'added' && 
+                (f.filename.includes('resource_ibm_') || f.filename.includes('data_source_ibm_')) &&
+                (f.filename.includes('custom_credentials') || f.filename.includes('action_control'))
+            );
+            
+            if (hasNewResource) return true;
+            
+            // Check message patterns
+            return COMMIT_PATTERNS.newFeatures.some(pattern => pattern.test(message));
+        }
+
+        async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status === 403) {
+                        throw new Error('GitHub API rate limit exceeded. Please try again later.');
+                    }
+                    if (i === maxRetries - 1) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                }
+            }
+        }
+
+        async function fetchCommits(lastTag, targetBranch) {
+            try {
+                const compareUrl = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/compare/${lastTag}...${targetBranch}`;
+                const response = await fetchWithRetry(compareUrl);
+                const data = await response.json();
+                
+                // Fetch detailed commit info including files
+                const detailedCommits = await Promise.all(
+                    data.commits.slice(0, 100).map(async (commit) => { // Increased limit
+                        try {
+                            const commitResponse = await fetchWithRetry(
+                                `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/commits/${commit.sha}`
+                            );
+                            return await commitResponse.json();
+                        } catch (error) {
+                            console.warn(`Failed to fetch details for commit ${commit.sha}:`, error);
+                            return commit;
+                        }
+                    })
+                );
+                
+                return detailedCommits;
+            } catch (error) {
+                console.error('Error fetching commits:', error);
+                throw error;
+            }
+        }
+
+        function updateStats(commits) {
+            const stats = {
+                total: commits.length,
+                bugFixes: 0,
+                newFeatures: 0,
+                enhancements: 0,
+                services: new Set()
+            };
+            
+            commits.forEach(commit => {
+                const type = detectCommitType(commit);
+                const service = detectService(commit);
+                
+                stats.services.add(service);
+                
+                switch(type) {
+                    case 'Bug Fixes':
+                        stats.bugFixes++;
+                        break;
+                    case 'New Features':
+                        stats.newFeatures++;
+                        break;
+                    case 'Enhancements':
+                        stats.enhancements++;
+                        break;
+                }
+            });
+            
+            document.getElementById('totalCommits').textContent = stats.total;
+            document.getElementById('bugFixes').textContent = stats.bugFixes;
+            document.getElementById('newFeatures').textContent = stats.newFeatures;
+            document.getElementById('enhancements').textContent = stats.enhancements;
+            document.getElementById('servicesImpacted').textContent = stats.services.size;
+            
+            document.getElementById('stats').style.display = 'block';
+        }
+
+        function generateChangelog(commits, newVersion) {
+            const now = new Date();
+            const date = now.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            let changelog = `# ${newVersion} (${date})\n`;
+            
+            // Group commits by type and service
+            const grouped = {};
+            
+            commits.forEach(commit => {
+                const type = detectCommitType(commit);
+                const service = detectService(commit);
+                const message = cleanCommitMessage(commit.commit.message);
+                const prNumber = extractPRNumber(commit.commit.message);
+                
+                if (!grouped[type]) grouped[type] = {};
+                if (!grouped[type][service]) grouped[type][service] = [];
+                
+                grouped[type][service].push({
+                    message,
+                    prNumber,
+                    sha: commit.sha.substring(0, 7)
+                });
+            });
+            
+            // Generate changelog sections in order
+            const sectionOrder = ['New Features', 'Bug Fixes', 'Enhancements', 'Documentation', 'Build System'];
+            
+            sectionOrder.forEach(sectionType => {
+                if (grouped[sectionType] && Object.keys(grouped[sectionType]).length > 0) {
+                    changelog += `\n## ${sectionType}\n\n`;
+                    
+                    Object.entries(grouped[sectionType])
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .forEach(([service, commits]) => {
+                            changelog += `### ${service}\n`;
+                            commits.forEach(commit => {
+                                const prLink = commit.prNumber ? ` ([${commit.prNumber}](https://github.com/${REPO_OWNER}/${REPO_NAME}/pull/${commit.prNumber}))` : '';
+                                changelog += `* ${commit.message}${prLink}\n`;
+                            });
+                            changelog += '\n';
+                        });
+                }
+            });
+            
+            return changelog;
+        }
+
+        function generateReleaseNotesContent(commits, newVersion) {
+            const now = new Date();
+            const date = now.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            let releaseNotes = `# ${newVersion} (${date})\n\n`;
+            
+            // Group commits by type
+            const grouped = {};
+            
+            commits.forEach(commit => {
+                const type = detectCommitType(commit);
+                const service = detectService(commit);
+                const message = cleanCommitMessage(commit.commit.message);
+                const prNumber = extractPRNumber(commit.commit.message);
+                
+                if (!grouped[type]) grouped[type] = [];
+                
+                grouped[type].push({
+                    service,
+                    message,
+                    prNumber
+                });
+            });
+            
+            // Generate release notes sections
+            const sectionOrder = ['New Features', 'Bug Fixes', 'Enhancements', 'Documentation', 'Build System'];
+            
+            sectionOrder.forEach(sectionType => {
+                if (grouped[sectionType] && grouped[sectionType].length > 0) {
+                    releaseNotes += `## ${sectionType}\n`;
+                    
+                    grouped[sectionType].forEach(commit => {
+                        const prLink = commit.prNumber ? ` (#${commit.prNumber})` : '';
+                        releaseNotes += `* **${commit.service}:** ${commit.message}${prLink}\n`;
+                    });
+                    releaseNotes += '\n';
+                }
+            });
+            
+            return releaseNotes;
+        }
+
+        async function generateReleaseNotes() {
+            const lastTag = document.getElementById('lastTag').value.trim();
+            const targetBranch = document.getElementById('targetBranch').value;
+            const newVersion = document.getElementById('newVersion').value.trim();
+            
+            if (!lastTag || !newVersion) {
+                alert('Please provide both the last tag and new version.');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+            
+            try {
+                console.log('Fetching commits between', lastTag, 'and', targetBranch);
+                const commits = await fetchCommits(lastTag, targetBranch);
+                
+                if (commits.length === 0) {
+                    throw new Error('No commits found between the specified tag and branch.');
+                }
+                
+                console.log('Found', commits.length, 'commits');
+                
+                // Update statistics
+                updateStats(commits);
+                
+                const changelog = generateChangelog(commits, newVersion);
+                const releaseNotesContent = generateReleaseNotesContent(commits, newVersion);
+                
+                document.getElementById('changelog').textContent = changelog;
+                document.getElementById('releasenotes').textContent = releaseNotesContent;
+                
+                // Hide loading and show results
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                
+                // Show error message in the UI
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = `Error generating release notes: ${error.message}`;
+                document.querySelector('.container').appendChild(errorDiv);
+                
+                // Remove error message after 5 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 5000);
+            }
+        }
+
+        async function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            if (!text || text.trim() === '') {
+                alert('No content to copy. Please generate release notes first.');
+                return;
+            }
+            
+            try {
+                // Try modern clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    showCopySuccess(event.target);
+                    return;
+                }
+                
+                // Fallback method for older browsers or non-HTTPS
+                await fallbackCopyToClipboard(text);
+                showCopySuccess(event.target);
+                
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                
+                // Last resort - show modal with text to copy manually
+                showCopyModal(text, elementId);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            return new Promise((resolve, reject) => {
+                // Create temporary textarea
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                
+                try {
+                    textArea.focus();
+                    textArea.select();
+                    
+                    // Try to copy using execCommand
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        resolve();
+                    } else {
+                        reject(new Error('execCommand failed'));
+                    }
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    reject(err);
+                }
+            });
+        }
+
+        function showCopySuccess(button) {
+            const originalText = button.textContent;
+            const originalBg = button.style.background;
+            
+            button.textContent = '✅ Copied!';
+            button.style.background = 'rgba(34, 197, 94, 0.3)';
+            button.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = originalBg;
+                button.style.borderColor = 'rgba(255,255,255,0.3)';
+            }, 2000);
+        }
+
+        function showCopyModal(text, elementId) {
+            // Remove existing modal if any
+            const existingModal = document.getElementById('copyModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'copyModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease-out;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 90%;
+                max-height: 80%;
+                overflow: hidden;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                position: relative;
+            `;
+            
+            const title = document.createElement('h3');
+            title.textContent = `Copy ${elementId === 'changelog' ? 'Changelog' : 'Release Notes'}`;
+            title.style.cssText = `
+                margin: 0 0 20px 0;
+                color: #374151;
+                font-size: 1.4rem;
+            `;
+            
+            const instruction = document.createElement('p');
+            instruction.textContent = 'Your browser blocked automatic copying. Please copy the text manually:';
+            instruction.style.cssText = `
+                margin: 0 0 15px 0;
+                color: #6b7280;
+            `;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.cssText = `
+                width: 100%;
+                height: 300px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 12px;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 14px;
+                resize: vertical;
+                outline: none;
+            `;
+            textarea.select();
+            
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 20px;
+            `;
+            
+            const selectAllBtn = document.createElement('button');
+            selectAllBtn.textContent = 'Select All';
+            selectAllBtn.style.cssText = `
+                background: #6b7280;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+            `;
+            selectAllBtn.onclick = () => {
+                textarea.select();
+                textarea.setSelectionRange(0, 99999); // For mobile devices
+            };
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.style.cssText = `
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+            `;
+            closeBtn.onclick = () => modal.remove();
+            
+            buttonContainer.appendChild(selectAllBtn);
+            buttonContainer.appendChild(closeBtn);
+            
+            modalContent.appendChild(title);
+            modalContent.appendChild(instruction);
+            modalContent.appendChild(textarea);
+            modalContent.appendChild(buttonContainer);
+            modal.appendChild(modalContent);
+            
+            // Close on outside click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+            
+            // Close on Escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+            
+            document.body.appendChild(modal);
+        }
+
+        // Auto-fetch latest tag on page load
+        window.addEventListener('load', async () => {
+            // Show HTTPS info if not on secure context
+            if (!window.isSecureContext && location.protocol !== 'https:') {
+                const httpsInfo = document.getElementById('httpsInfo');
+                if (httpsInfo) {
+                    httpsInfo.style.display = 'block';
+                }
+            }
+            
+            try {
+                const response = await fetchWithRetry(`${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/tags`);
+                const tags = await response.json();
+                if (tags.length > 0) {
+                    document.getElementById('lastTag').value = tags[0].name;
+                    // Auto-suggest next version
+                    const latestVersion = tags[0].name.replace('v', '');
+                    const parts = latestVersion.split('.');
+                    if (parts.length === 3) {
+                        parts[2] = (parseInt(parts[2]) + 1).toString();
+                        document.getElementById('newVersion').value = parts.join('.');
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not auto-fetch latest tag:', error);
+            }
+        });
+    </script>
+</body>
+</html>
